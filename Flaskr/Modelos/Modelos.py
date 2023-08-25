@@ -1,19 +1,16 @@
 from flask_sqlalchemy import SQLAlchemy
 import enum
 
-
-db=SQLAlchemy()
+db = SQLAlchemy()
 
 
 class Cancion(db.Model):
-    id = db.Column(db.Integer, primary_key = True)
+    id = db.Column(db.Integer, primary_key=True)
     titulo = db.Column(db.String(128))
     minutos = db.Column(db.Integer)
     segundos = db.Column(db.Integer)
     interprete = db.Column(db.String(128))
-
-    def __repr__(self):
-        return "{}-{}-{}-{}".format(self.titulo,self.minutos,self.segundos,self.interprete)
+    albumes = db.relationship('Album', secondary='album_cancion', back_populates='canciones')
 
 
 class Medio(enum.Enum):
@@ -21,19 +18,16 @@ class Medio(enum.Enum):
     CASETE = 2
     CD = 3
 
-    def __repr__(self):
-        return "{}-{}-{}".format(self.DISCO, self.CASETE, self.CD)
-
 
 class Album(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     titulo = db.Column(db.String(128))
-    year = db.Column(db.Integer)
+    ano = db.Column(db.Integer)
     descripcion = db.Column(db.String(128))
     medio = db.Column(db.Enum(Medio))
-
-    def __repr__(self):
-        return "{}-{}-{}-{}-{}".format(self.titulo, self.minutos, self.segundos, self.interprete)
+    usuario = db.Column(db.Integer, db.ForeignKey('usuario.id'))
+    canciones = db.relationship('cancion', secondary='album_cancion', back_populates='albumes')
+    __table_arg__ = (db.UniqueConstraint('usuario', 'titulo', name='titulo_unico_album'))
 
 
 class Usuario(db.Model):
@@ -41,6 +35,9 @@ class Usuario(db.Model):
     tablename = db.Column(db.String(128))
     nombre = db.Column(db.String(128))
     contrasena = db.Column(db.String(128))
+    albumes = db.relationship('Album', cascade='all,delete,delete-orphan')
 
-    def __repr__(self):
-        return "{}-{}-{}-{}".format(self.titulo, self.minutos, self.segundos, self.interprete)
+
+albumes_canciones = db.Table('album_cancion',
+                             db.Column('album_id', db.Integer, db.ForeignKey('album.id', primary_key=True)),
+                             db.Column('cancion_id', db.Integer, db.ForeignKey('cancion.id', primary_key=True)))
